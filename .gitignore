@@ -93,6 +93,7 @@ output.txt
 ## IntelliJ IDEA project files
 #############
 
+.idea
 *.iml
 *.ipr
 *.iws
