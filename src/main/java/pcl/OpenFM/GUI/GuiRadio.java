@@ -285,7 +285,7 @@ public class GuiRadio extends GuiRadioBase {
 	@SideOnly(Side.CLIENT)
 	protected void actionPerformed(int buttonID) {
 		if (buttonID == 0 && !this.redstoneButtonState) { //Play button
-			if(this.streamTextBox.getText() != null && !this.streamTextBox.getText().isEmpty()) {
+			if(!this.streamTextBox.getText().isEmpty()) {
 				if (this.streamTextBox.getText().toLowerCase().endsWith(".m3u")) {
 					this.radio.streamURL = takeFirstEntryFromM3U(this.streamTextBox.getText());
 				} else if (this.streamTextBox.getText().toLowerCase().endsWith(".pls")) {
@@ -293,13 +293,13 @@ public class GuiRadio extends GuiRadioBase {
 				} else {
 					this.radio.streamURL = this.streamTextBox.getText();
 				}
-				System.out.println(this.radio.streamURL);
+				System.out.println(this.radio.streamURL + "; Playing: " + this.radio.isPlaying);
 				if (this.radio.isPlaying) {
-					PacketHandler.INSTANCE.sendToServer(new MessageRadioPlaying(this.radio, !this.radio.isPlaying).wrap());
+					PacketHandler.INSTANCE.sendToServer(new MessageRadioPlaying(this.radio, false).wrap());
 					PacketHandler.INSTANCE.sendToServer(new MessageRadioStreamURL(this.radio, this.radio.streamURL).wrap());
 				} else {
 					PacketHandler.INSTANCE.sendToServer(new MessageRadioStreamURL(this.radio, this.radio.streamURL).wrap());
-					PacketHandler.INSTANCE.sendToServer(new MessageRadioPlaying(this.radio, !this.radio.isPlaying).wrap());
+					PacketHandler.INSTANCE.sendToServer(new MessageRadioPlaying(this.radio, true).wrap());
 				}
 			}
 		}
@@ -350,7 +350,10 @@ public class GuiRadio extends GuiRadioBase {
 		} if (buttonID == 11) { //Lock
 			PacketHandler.INSTANCE.sendToServer(new MessageRadioLocked(this.radio, !this.lockedButtonState).wrap());
 		} if (buttonID == 13) { //Screen Color
-			PacketHandler.INSTANCE.sendToServer(new MessageRadioScreenColor(this.radio, Integer.parseInt(this.colorBox.getText(), 16)).wrap());
+			if (!this.colorBox.getText().isEmpty() && !this.colorBox.getText().equals(toHexString(this.radio.getScreenColor()))) {
+				System.out.println("Updating color on server!");
+				PacketHandler.INSTANCE.sendToServer(new MessageRadioScreenColor(this.radio, Integer.parseInt(this.colorBox.getText(), 16)).wrap());
+			}
 		}
 
 		if (buttonID == 14) { //Screen Text
@@ -394,9 +397,13 @@ public class GuiRadio extends GuiRadioBase {
 			this.colorBox.setFocused(false);
 			this.screenTextBox.setFocused(false);
 
-			//actionPerformed(13);
-			this.colorBox.setTextColor(Integer.parseInt(this.colorBox.getText(), 16));
-			this.screenTextBox.setTextColor(Integer.parseInt(this.colorBox.getText(), 16));
+			actionPerformed(13);
+			if (!this.colorBox.getText().isEmpty()) {
+				this.colorBox.setTextColor(Integer.parseInt(this.colorBox.getText(), 16));
+				this.screenTextBox.setTextColor(Integer.parseInt(this.colorBox.getText(), 16));
+			} else {
+				this.colorBox.setText(toHexString(this.radio.getScreenColor()));
+			}
 			//actionPerformed(14);
 		}
 	}
@@ -419,8 +426,12 @@ public class GuiRadio extends GuiRadioBase {
 			if (par1 == '\r')
 			{
 				actionPerformed(13);
-				this.colorBox.setTextColor(Integer.parseInt(this.colorBox.getText(), 16));
-				this.screenTextBox.setTextColor(Integer.parseInt(this.colorBox.getText(), 16));
+				if (!this.colorBox.getText().isEmpty()) {
+					this.colorBox.setTextColor(Integer.parseInt(this.colorBox.getText(), 16));
+					this.screenTextBox.setTextColor(Integer.parseInt(this.colorBox.getText(), 16));
+				} else {
+					this.colorBox.setText(toHexString(this.radio.getScreenColor()));
+				}
 			}
 		} else if (this.screenTextBox.isFocused()) {
 			this.screenTextBox.textboxKeyTyped(par1, par2);
