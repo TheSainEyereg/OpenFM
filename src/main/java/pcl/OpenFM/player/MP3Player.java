@@ -147,7 +147,7 @@ public class MP3Player {
 
 			AL10.alGenBuffers(this.buffer);
 			ShortBuffer data = (ShortBuffer) BufferUtils.createShortBuffer(output.getBufferLength()).put(samples, 0, output.getBufferLength()).flip();
-			AL10.alBufferData(this.buffer.get(0), (output.getChannelCount() > 1) ? AL10.AL_FORMAT_STEREO16 : AL10.AL_FORMAT_MONO16, data, output.getSampleFrequency());
+			AL10.alBufferData(this.buffer.get(0), AL10.AL_FORMAT_STEREO16, data, output.getSampleFrequency() / ((output.getChannelCount() > 1) ? 1 : 2));
 			AL10.alSourceQueueBuffers(this.source.get(0), buffer);
 
 			int state = AL10.alGetSourcei(this.source.get(0), AL10.AL_SOURCE_STATE);
