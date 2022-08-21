@@ -23,8 +23,8 @@ targetCompatibility = 1.8
 repositories {
 	mavenCentral()
 	maven {
-        name = "OC repo mirror"
-        url = "http://maven.pc-logix.com/"
+        name = "OC repo"
+        url = "https://maven.cil.li/"
     }
 }
 
