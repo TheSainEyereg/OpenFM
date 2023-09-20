@@ -1,28 +1,24 @@
 // For those who want the bleeding edge
 buildscript {
     repositories {
-        jcenter()
-        maven {
-            name = "forge"
-            url = "http://files.minecraftforge.net/maven"
-        }
+        maven { url = "https://maven.minecraftforge.net/" }
+        mavenCentral()
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+        classpath "net.minecraftforge.gradle:ForgeGradle:3.+"
     }
 }
 
 plugins {
-  id "com.matthewprenger.cursegradle" version "1.0.7"
+    id "com.matthewprenger.cursegradle" version "1.4.0"
 }
-apply plugin: 'net.minecraftforge.gradle.forge'
+apply plugin: "net.minecraftforge.gradle"
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = "1.8" // Need this here so eclipse task generates correctly.
 
 repositories {
-	mavenCentral()
-	maven {
+    mavenCentral()
+    maven {
         name = "OC repo"
         url = "https://maven.cil.li/"
     }
@@ -34,26 +30,27 @@ configurations {
 }
 
 def getGitRef() {
-  try {
-    def stdout = new ByteArrayOutputStream()
-    exec {
-      commandLine 'git', 'rev-parse', '--short', 'HEAD'
-      standardOutput = stdout
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine "git", "rev-parse", "--short", "HEAD"
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    } catch (Throwable e) {
+        return "unknown"
     }
-    return stdout.toString().trim()
-  } catch (Throwable e) {
-    return "unknown"
-  }
 }
 
 dependencies {
-    deobfCompile "li.cil.oc:OpenComputers:MC1.12.2-1.7.2.+"
-	shade "javazoom:jlayer:1.0.1"
-	shade "com.squareup.okhttp:okhttp:2.5.0"
-	shade "com.googlecode.soundlibs:tritonus-share:0.3.7-2"
-	compile "com.googlecode.soundlibs:mp3spi:1.9.5-1"
-	compile "com.googlecode.soundlibs:vorbisspi:1.0.3-1"
-	compile files('libs/jaad-0.8.5.jar')
+    minecraft "net.minecraftforge:forge:1.12.2-14.23.5.2859"
+    compile "li.cil.oc:OpenComputers:MC1.12.2-1.7.5.+:api"
+    shade "javazoom:jlayer:1.0.1"
+    shade "com.squareup.okhttp:okhttp:2.5.0"
+    shade "com.googlecode.soundlibs:tritonus-share:0.3.7-2"
+    compile "com.googlecode.soundlibs:mp3spi:1.9.5-1"
+    compile "com.googlecode.soundlibs:vorbisspi:1.0.3-1"
+    compile files("libs/jaad-0.8.5.jar")
 }
 
 if (System.getenv("PROMOTED_NUMBER") != null)
@@ -63,72 +60,86 @@ else if (System.getenv("BUILD_NUMBER") != null)
 else
     ext.buildNumber = "+" + getGitRef()
 
-version = "0.1.0"
+version = "0.1.2"
 group = "pcl.OpenFM"
 archivesBaseName = "OpenFM-1.12.2"
 
 minecraft {
-    version = "1.12.2-14.23.4.2707"
-    runDir = "run"
-    mappings = "snapshot_20171003"
-    useDepAts = true
-	replace "@VERSION@", project.version
-	replace "@BUILD@", project.ext.buildNumber
-	makeObfSourceJar = false
+    mappings channel: "snapshot", version: "20171003-1.12"
+    runs {
+        client {
+            workingDirectory project.file("run")
+
+            // Recommended logging data for a userdev environment
+            property "forge.logging.markers", "SCAN,REGISTRIES,REGISTRYDUMP"
+
+            // Recommended logging level for the console
+            property "forge.logging.console.level", "debug"
+        }
+
+        server {
+
+            // Recommended logging data for a userdev environment
+            property "forge.logging.markers", "SCAN,REGISTRIES,REGISTRYDUMP"
+
+            // Recommended logging level for the console
+            property "forge.logging.console.level", "debug"
+        }
+    }
 }
 
 version = "${version}.${project.ext.buildNumber}"
 jar {
     configurations.shade.each { dep ->
         from(project.zipTree(dep)){
-            exclude 'META-INF', 'META-INF/**'
+            exclude "META-INF", "META-INF/**"
         }
     }
 }
 
 def commonManifest = {
-		mainAttributes( "FMLCorePlugin": "pcl.OpenFM.misc.OFMDepLoader",
-						"FMLCorePluginContainsFMLMod": true) 
+    mainAttributes( "FMLCorePlugin": "pcl.OpenFM.misc.OFMDepLoader",
+            "FMLCorePluginContainsFMLMod": true)
 }
 jar.manifest commonManifest
 
 def curseforge_key = 0
 def curse_changlog = "default"
-if (project.hasProperty('opensecurity_curseforge_key')) {
-	curseforge_key = project.opensecurity_curseforge_key
-	//curse_changlog = project.promo-changelog
-	curse_changlog = project.changelog
+if (project.hasProperty("opensecurity_curseforge_key")) {
+    curseforge_key = project.opensecurity_curseforge_key
+    //curse_changlog = project.promo-changelog
+    curse_changlog = project.changelog
 }
 
 curseforge {
-	apiKey = curseforge_key
-	project {
-		id = "236839"
-		releaseType = "release"
-		changelog = curse_changlog
-		addGameVersion '1.12.2'
-	}
+    apiKey = curseforge_key
+    project {
+        id = "236839"
+        releaseType = "release"
+        changelog = curse_changlog
+        addGameVersion "1.12.2"
+    }
 }
 
 processResources {
     // replace stuff in mcmod.info, nothing else
     from(sourceSets.main.resources.srcDirs) {
-        include 'mcmod.info'
-                
+        include "mcmod.info"
+
         // replace version and mcversion
-        expand 'version':project.version + "." + project.ext.buildNumber, 'mcversion':project.minecraft.version
+        expand "version": version, "mcversion":  "1.12.2"
     }
-        
+
     // copy everything else, thats not the mcmod.info
     from(sourceSets.main.resources.srcDirs) {
-        exclude 'mcmod.info'
+        exclude "mcmod.info"
     }
 }
 
 // this is needed for IntelliJ so we don't have to copy over the assets manually every time
-idea {
-    module {
-        outputDir = file('build/classes/main')
-    }
-}
+//idea {
+//    module {
+//        outputDir = file("build/classes/main")
+//    }
+//}
 
